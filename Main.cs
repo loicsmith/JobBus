@@ -4,7 +4,9 @@ using Life.Network;
 using ModKit.Helper;
 using ModKit.Interfaces;
 using ModKit.Internal;
+using ModKit.ORM;
 using MODRP_JobBus.Functions;
+using SQLite;
 using System.Collections.Generic;
 using _menu = AAMenu.Menu;
 
@@ -28,10 +30,18 @@ namespace MODRP_JobBus.Main
             Logger.LogSuccess($"{PluginInformations.SourceName} v{PluginInformations.Version}", "initialisé");
 
             InitAAmenu();
+
+            Orm.RegisterTable<OrmManager.JobBus_LineManager>();
+            Orm.RegisterTable<OrmManager.JobBus_BusStopManager>();
         }
 
         public void InitAAmenu()
         {
+            _menu.AddAdminPluginTabLine(PluginInformations, 0, "JobBus", (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+            });
+
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Bus }, null, "Configuration SAE", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
@@ -45,6 +55,7 @@ namespace MODRP_JobBus.Main
             _menu.AddAdminTabLine(PluginInformations, 5, "Configuration Lignes de bus", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                LineCreator.MainPanel(player);
             });
         }
     }
