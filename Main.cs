@@ -4,16 +4,22 @@ using Life.Network;
 using ModKit.Helper;
 using ModKit.Interfaces;
 using ModKit.Internal;
+using MODRP_JobBus.Functions;
 using System.Collections.Generic;
 using _menu = AAMenu.Menu;
 
-namespace Main
+namespace MODRP_JobBus.Main
 {
+
     class Main : ModKit.ModKit
     {
+        public LineCreator LineCreator = new LineCreator();
+
         public Main(IGameAPI api) : base(api)
         {
             PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.0.0", "Loicsmith");
+
+            LineCreator.Context = this;
         }
 
         public override void OnPluginInit()
