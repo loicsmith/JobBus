@@ -169,7 +169,18 @@ namespace MODRP_JobBus.Functions
                         player.DestroyVehicleCheckpoint(c);
                         player.setup.TargetDisableNavigation();
                         player.Notify("SAE", "Les clients montent/descendent du bus..", NotificationManager.Type.Info, 5f);
+                        while (!(vehicle.bus.HasAnyDoorOpened() && vehicle.bus.NetworkisKneelDown))
+                        {
+                            await Task.Delay(500);
+                            player.setup.NetworkisFreezed = true;
+                        }
                         await Task.Delay(5000);
+                        while (!(vehicle.bus.HasAnyDoorOpened() && vehicle.bus.NetworkisKneelDown))
+                        {
+                            await Task.Delay(500);
+                            player.setup.NetworkisFreezed = false;
+                        }
+
 
                         if (currentIndex < positions.Count - 1)
                         {
