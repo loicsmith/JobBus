@@ -3,10 +3,8 @@ using Life.Network;
 using Life.UI;
 using ModKit.Helper;
 using ModKit.Utils;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace MODRP_JobBus.Functions
 {
@@ -18,8 +16,8 @@ namespace MODRP_JobBus.Functions
         {
             Panel panel = Context.PanelHelper.Create("LineCreator | Accueil", UIPanel.PanelType.Text, player, () => MainPanel(player));
             panel.TextLines.Add("Veuillez sélectionner une catégorie afin de poursuivre");
-            panel.NextButton("Gestion Ligne", () => LineManager(player));
-            panel.NextButton("Gestion Arrêt", () => BusStopManager(player));
+            panel.NextButton("Gestion Ligne", () => LineManager_Main(player));
+            panel.NextButton("Gestion Arrêt", () => BusStopManager_Main(player));
 
             panel.AddButton("Retour", ui => AAMenu.AAMenu.menu.AdminPanel(player));
             panel.CloseButton();
@@ -27,9 +25,9 @@ namespace MODRP_JobBus.Functions
         }
 
         #region Line Manager
-        public async void LineManager(Player player)
+        public async void LineManager_Main(Player player)
         {
-            Panel panel = Context.PanelHelper.Create("LineCreator | Line Manager", UIPanel.PanelType.TabPrice, player, () => LineManager(player));
+            Panel panel = Context.PanelHelper.Create("LineCreator | Line Manager", UIPanel.PanelType.TabPrice, player, () => LineManager_Main(player));
 
             var LineData = await OrmManager.JobBus_LineManager.QueryAll();
 
@@ -38,7 +36,8 @@ namespace MODRP_JobBus.Functions
                 panel.AddTabLine(Line.LineName, "ID : " + Line.Id, ItemUtils.GetIconIdByItemId(1112), _ => { LineManager_MoreOptions(player, Line); });
             }
             panel.NextButton("Ajouter", () => LineManager_Add(player));
-            panel.NextButton("...", () => panel.SelectTab());
+            panel.NextButton("Options", () => panel.SelectTab());
+
             panel.PreviousButton();
             panel.CloseButton();
             panel.Display();
@@ -54,7 +53,11 @@ namespace MODRP_JobBus.Functions
             {
                 string _LineName = ui.inputText;
 
-                OrmManager.JobBus_LineManager instance = new OrmManager.JobBus_LineManager { LineName = _LineName };
+                int[] dataArray = { };
+
+                string JsonData = JsonConvert.SerializeObject(dataArray);
+
+                OrmManager.JobBus_LineManager instance = new OrmManager.JobBus_LineManager { LineName = _LineName, BusStopID = JsonData };
                 var result = await instance.Save();
 
                 if (result)
@@ -66,6 +69,7 @@ namespace MODRP_JobBus.Functions
                     player.Notify("LineCreator", $"Une erreur est survenue lors de la création de la ligne de bus portant le nom de \"{_LineName}\"", NotificationManager.Type.Error);
                 }
                 player.ClosePanel(ui);
+                LineManager_Main(player);
             });
             panel.PreviousButton();
             panel.CloseButton();
@@ -78,12 +82,12 @@ namespace MODRP_JobBus.Functions
             panel.TextLines.Add($"Nom de la ligne : \"{LineManager.LineName}\"");
             panel.TextLines.Add($"ID de la ligne : \"{LineManager.Id}\"");
 
-            panel.AddButton("Liste arrêt de bus", (ui) =>
+            panel.AddButton($"{TextFormattingHelper.Size("Liste arrêt de bus", 15)}", (ui) =>
             {
                 player.ClosePanel(ui);
                 LineManager_ListBusStop(player, LineManager);
             });
-            panel.AddButton("Supprimer", (ui) =>
+            panel.AddButton($"{TextFormattingHelper.Size("Supprimer Ligne", 15)}", (ui) =>
             {
                 player.ClosePanel(ui);
                 LineManager_Delete(player, LineManager);
@@ -97,11 +101,14 @@ namespace MODRP_JobBus.Functions
         {
             Panel panel = Context.PanelHelper.Create($"LineCreator | Ligne \"{LineManager.LineName}\"", UIPanel.PanelType.TabPrice, player, () => LineManager_ListBusStop(player, LineManager));
 
-            var BusStopData = await OrmManager.JobBus_BusStopManager.QueryAll();
+            int[] data = JsonConvert.DeserializeObject<int[]>(LineManager.BusStopID);
 
-            foreach (OrmManager.JobBus_BusStopManager BusStop in BusStopData)
+            var dataList = data.ToList();
+            foreach (var BusStopData in dataList)
             {
-                panel.AddTabLine(BusStop.BusStopName, "ID : " + BusStop.Id, ItemUtils.GetIconIdByItemId(1112), _ => { BusStopLineManager_Remove(player, LineManager); });
+                var BusStop = await OrmManager.JobBus_BusStopManager.Query(BusStopData);
+
+                panel.AddTabLine(BusStop.BusStopName, "ID : " + BusStop.Id, ItemUtils.GetIconIdByItemId(1112), _ => { BusStopLineManager_JSON(player, LineManager, BusStop.Id, false); });
             }
 
             panel.AddButton("Ajouter", (ui) =>
@@ -113,6 +120,7 @@ namespace MODRP_JobBus.Functions
             {
                 panel.SelectTab();
                 player.ClosePanel(ui);
+                LineManager_ListBusStop(player, LineManager);
             });
 
             panel.PreviousButton();
@@ -125,7 +133,7 @@ namespace MODRP_JobBus.Functions
             Panel panel = Context.PanelHelper.Create("LineCreator | Delete Line", UIPanel.PanelType.Text, player, () => LineManager_Delete(player, LineManager));
             panel.TextLines.Add($"Veuillez confirmer la suppresion de la ligne de bus : \"{LineManager.LineName}\"");
 
-            panel.AddButton("Valider", async (ui) =>
+            panel.NextButton("Valider", async () =>
             {
                 var result = await LineManager.Delete();
 
@@ -137,85 +145,19 @@ namespace MODRP_JobBus.Functions
                 {
                     player.Notify("LineCreator", $"Une erreur est survenue lors de la suppression de la ligne de bus portant le nom de \"{LineManager.LineName}\"", NotificationManager.Type.Error);
                 }
-                player.ClosePanel(ui);
+                LineManager_Main(player);
             });
             panel.PreviousButton();
             panel.CloseButton();
             panel.Display();
         }
 
-        #endregion
-
-        #region Bus Stop <> Line Manager
-
-        public async void BusStopLineManager_Add(Player player, OrmManager.JobBus_LineManager LineManager)
-        {
-            Panel panel = Context.PanelHelper.Create("LineCreator | Bus Stop <> Line Manager", UIPanel.PanelType.TabPrice, player, () => BusStopLineManager_Add(player, LineManager));
-
-            var Data = await OrmManager.JobBus_BusStopManager.QueryAll();
-
-            foreach(OrmManager.JobBus_BusStopManager BusStop in Data)
-            {
-                panel.AddTabLine(BusStop.BusStopName, "ID : " + BusStop.Id, ItemUtils.GetIconIdByItemId(1112), _ => { BusStopLineManager_JSON(player, LineManager, BusStop.Id, true); });
-            }
-
-            panel.AddButton("Sélectionner arrêt", (ui) =>
-            {
-                player.ClosePanel(ui);
-                panel.SelectTab();
-            });
-            panel.PreviousButton();
-            panel.CloseButton();
-            panel.Display();
-        }
-
-        public async void BusStopLineManager_Remove(Player player, OrmManager.JobBus_LineManager LineManager)
-        {
-            Panel panel = Context.PanelHelper.Create("LineCreator | Bus Stop <> Line Manager", UIPanel.PanelType.TabPrice, player, () => BusStopLineManager_Add(player, LineManager));
-
-            var Data = await OrmManager.JobBus_BusStopManager.QueryAll();
-
-            foreach (OrmManager.JobBus_BusStopManager BusStop in Data)
-            {
-                panel.AddTabLine(BusStop.BusStopName, "ID : " + BusStop.Id, ItemUtils.GetIconIdByItemId(1112), _ => { BusStopLineManager_JSON(player, LineManager, BusStop.Id, false); });
-            }
-
-            panel.AddButton("Retirer", (ui) =>
-            {
-                player.ClosePanel(ui);
-                panel.SelectTab();
-            });
-            panel.PreviousButton();
-            panel.CloseButton();
-            panel.Display();
-        }
-
-        public void BusStopLineManager_JSON(Player player, OrmManager.JobBus_LineManager LineManager, int BusStopID, bool AddOrRemove)
-        {
-            List<int> data;
-            string json = File.ReadAllText(LineManager.BusStopID);
-            data = JsonConvert.DeserializeObject<List<int>>(json);
-
-            if (AddOrRemove)
-            {
-                data.Add(BusStopID);
-                player.Notify("LineCreator", $"L'arrêt de bus ayant pour ID \"{BusStopID}\" vient d'être ajouté à la ligne de bus \"{LineManager.LineName}\"");
-            } else
-            {
-                data.Remove(BusStopID);
-                player.Notify("LineCreator", $"L'arrêt de bus ayant pour ID \"{BusStopID}\" vient d'être retiré de la ligne de bus \"{LineManager.LineName}\"");
-            }
-
-            string updatedJson = JsonConvert.SerializeObject(data, Formatting.Indented);
-            File.WriteAllText(LineManager.BusStopID, updatedJson);
-
-        }
         #endregion
 
         #region Bus Stop Manager
-        public async void BusStopManager(Player player)
+        public async void BusStopManager_Main(Player player)
         {
-            Panel panel = Context.PanelHelper.Create("LineCreator | Bus Stop Manager", UIPanel.PanelType.TabPrice, player, () => BusStopManager(player));
+            Panel panel = Context.PanelHelper.Create("LineCreator | Bus Stop Manager", UIPanel.PanelType.TabPrice, player, () => BusStopManager_Main(player));
 
             var LineData = await OrmManager.JobBus_BusStopManager.QueryAll();
 
@@ -225,7 +167,7 @@ namespace MODRP_JobBus.Functions
             }
 
             panel.NextButton("Ajouter", () => BusStopManager_AddBusStop(player));
-            panel.NextButton("...", () => panel.SelectTab());
+            panel.NextButton("Options", () => panel.SelectTab());
             panel.PreviousButton();
             panel.CloseButton();
             panel.Display();
@@ -276,6 +218,7 @@ namespace MODRP_JobBus.Functions
                     player.Notify("LineCreator", $"Une erreur est survenue lors de la création de l'arrêt de bus portant le nom de \"{_BusStopName}\"", NotificationManager.Type.Error);
                 }
                 player.ClosePanel(ui);
+                BusStopManager_Main(player);
             });
             panel.PreviousButton();
             panel.CloseButton();
@@ -286,7 +229,7 @@ namespace MODRP_JobBus.Functions
         {
             Panel panel = Context.PanelHelper.Create("LineCreator | More Options", UIPanel.PanelType.Text, player, () => BusStopManager_MoreOptions(player, BusStopManager));
 
-            panel.TextLines.Add("Informations :");
+            panel.TextLines.Add($"{TextFormattingHelper.Bold(TextFormattingHelper.Align("Informations :", TextFormattingHelper.Aligns.Center))}");
             panel.TextLines.Add("Nom de l'arrêt : " + BusStopManager.BusStopName);
             panel.TextLines.Add("ID : " + BusStopManager.Id);
             panel.TextLines.Add("Position X : " + BusStopManager.PositionX);
@@ -321,18 +264,95 @@ namespace MODRP_JobBus.Functions
 
                 if (result)
                 {
-                    player.Notify("LineCreator", $"La ligne de bus portant le nom de \"{BusStopManager.BusStopName}\" vient d'être supprimé", NotificationManager.Type.Success);
+                    BusStopLineManager_DeleteWhenBusStopIsDeleted(player, BusStopManager.Id);
+                    player.Notify("LineCreator", $"L'arrêt de bus portant le nom de \"{BusStopManager.BusStopName}\" vient d'être supprimé", NotificationManager.Type.Success);
                 }
                 else
                 {
-                    player.Notify("LineCreator", $"Une erreur est survenue lors de la suppression de la ligne de bus portant le nom de \"{BusStopManager.BusStopName}\"", NotificationManager.Type.Error);
+                    player.Notify("LineCreator", $"Une erreur est survenue lors de la suppression de l'arrêt de bus portant le nom de \"{BusStopManager.BusStopName}\"", NotificationManager.Type.Error);
                 }
                 player.ClosePanel(ui);
+                BusStopManager_Main(player);
             });
             panel.PreviousButton();
             panel.CloseButton();
             panel.Display();
         }
+        #endregion
+
+        #region Bus Stop <> Line Manager
+
+        public async void BusStopLineManager_Add(Player player, OrmManager.JobBus_LineManager LineManager)
+        {
+            Panel panel = Context.PanelHelper.Create("LineCreator | Bus Stop <> Line Manager", UIPanel.PanelType.TabPrice, player, () => BusStopLineManager_Add(player, LineManager));
+
+            var Data = await OrmManager.JobBus_BusStopManager.QueryAll();
+
+            foreach (OrmManager.JobBus_BusStopManager BusStop in Data)
+            {
+                panel.AddTabLine(BusStop.BusStopName, "ID : " + BusStop.Id, ItemUtils.GetIconIdByItemId(1112), _ => { BusStopLineManager_JSON(player, LineManager, BusStop.Id, true); });
+            }
+
+            panel.AddButton($"{TextFormattingHelper.Size("Ajouter arrêt sélectionné", 10)}", (ui) =>
+            {
+                player.ClosePanel(ui);
+                panel.SelectTab();
+                LineManager_ListBusStop(player, LineManager);
+            });
+            panel.PreviousButton();
+            panel.CloseButton();
+            panel.Display();
+        }
+
+        public async void BusStopLineManager_DeleteWhenBusStopIsDeleted(Player player, int BusStopID)
+        {
+            var LineData = await OrmManager.JobBus_LineManager.QueryAll();
+
+            foreach(OrmManager.JobBus_LineManager LineManager in LineData)
+            {
+                BusStopLineManager_JSON(player, LineManager, BusStopID, false);
+            }
+        }
+
+        public async void BusStopLineManager_JSON(Player player, OrmManager.JobBus_LineManager LineManager, int BusStopID, bool AddOrRemove)
+        {
+            int[] data = JsonConvert.DeserializeObject<int[]>(LineManager.BusStopID);
+
+            var dataList = data.ToList();
+
+            if (AddOrRemove)
+            {
+                if (!dataList.Contains(BusStopID))
+                {
+                    dataList.Add(BusStopID);
+                    player.Notify("LineCreator", $"L'arrêt de bus ayant pour ID \"{BusStopID}\" vient d'être ajouté à la ligne de bus \"{LineManager.LineName}\"", NotificationManager.Type.Success);
+                }
+                else
+                {
+                    player.Notify("LineCreator", $"L'arrêt de bus ayant pour ID \"{BusStopID}\" existe déjà la ligne de bus \"{LineManager.LineName}\" !", NotificationManager.Type.Error);
+                }
+            }
+            else
+            {
+                if (dataList.Contains(BusStopID))
+                {
+                    dataList.Remove(BusStopID);
+                    player.Notify("LineCreator", $"L'arrêt de bus ayant pour ID \"{BusStopID}\" vient d'être retiré de la ligne de bus \"{LineManager.LineName}\"");
+                }
+                else
+                {
+                    player.Notify("LineCreator", $"L'arrêt de bus ayant pour ID \"{BusStopID}\" n'existe pas pour la ligne de bus \"{LineManager.LineName}\" !", NotificationManager.Type.Error);
+                }
+            }
+
+            data = dataList.ToArray();
+            string updatedJson = JsonConvert.SerializeObject(data, Formatting.None);
+
+            LineManager.BusStopID = updatedJson;
+            await LineManager.Save();
+
+        }
+        #endregion
+
     }
-    #endregion
 }

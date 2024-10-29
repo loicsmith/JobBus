@@ -609,6 +609,5 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterCompile">
-    <Exec Command="echo Debug@@Any CPU&#xD;&#xA;if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; (if &quot;$(PlatformName)&quot; == &quot;AnyCPU&quot; (&quot;$(ProjectDir)_Obfuscar\Obfuscar.Console.exe&quot; &quot;$(ProjectDir)_Obfuscar\obfuscar_Debug_Any_CPU.xml&quot;&#xD;&#xA;xcopy /e /v &quot;$(ProjectDir)obj\Debug\\Out\&quot; &quot;$(ProjectDir)obj\Debug\&quot; /Y))" />
   </Target>
 </Project>

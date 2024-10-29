@@ -52,7 +52,7 @@ namespace MODRP_JobBus.Main
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
             });
 
-            _menu.AddAdminTabLine(PluginInformations, 5, "Configuration Lignes de bus", (ui) =>
+            _menu.AddAdminTabLine(PluginInformations, 5, $"{TextFormattingHelper.Color("LineCreator - JobBus", TextFormattingHelper.Colors.Grey)}", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 LineCreator.MainPanel(player);
