@@ -16,12 +16,14 @@ namespace MODRP_JobBus.Main
     class Main : ModKit.ModKit
     {
         public LineCreator LineCreator = new LineCreator();
+        public LinePlayable LinePlayable = new LinePlayable();
 
         public Main(IGameAPI api) : base(api)
         {
             PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.0.0", "Loicsmith");
 
             LineCreator.Context = this;
+            LinePlayable.Context = this;
         }
 
         public override void OnPluginInit()
@@ -42,14 +44,10 @@ namespace MODRP_JobBus.Main
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
             });
 
-            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Bus }, null, "Configuration SAE", (ui) =>
+            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Bus }, null, "Utiliser SAE", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-            });
-
-            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Bus }, null, "Vente de titres de transports", (ui) =>
-            {
-                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                LinePlayable.MainPanel(player);
             });
 
             _menu.AddAdminTabLine(PluginInformations, 5, $"{TextFormattingHelper.Color("LineCreator - JobBus", TextFormattingHelper.Colors.Grey)}", (ui) =>
