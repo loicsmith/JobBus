@@ -4,7 +4,9 @@ using Life.UI;
 using ModKit.Helper;
 using ModKit.Utils;
 using System;
-using UnityEngine.Tilemaps;
+using System.Collections.Generic;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace MODRP_JobBus.Functions
 {
@@ -148,16 +150,16 @@ namespace MODRP_JobBus.Functions
 
         public async void BusStopLineManager_Add(Player player, OrmManager.JobBus_LineManager LineManager)
         {
-            Panel panel = Context.PanelHelper.Create("LineCreator | Bus Stop <> Line Manager", UIPanel.PanelType.TabPrice, player, () => MainPanel(player));
+            Panel panel = Context.PanelHelper.Create("LineCreator | Bus Stop <> Line Manager", UIPanel.PanelType.TabPrice, player, () => BusStopLineManager_Add(player, LineManager));
 
             var Data = await OrmManager.JobBus_BusStopManager.QueryAll();
 
             foreach(OrmManager.JobBus_BusStopManager BusStop in Data)
             {
-                panel.AddTabLine(BusStop.BusStopName, "ID : " + BusStop.Id, ItemUtils.GetIconIdByItemId(1112), _ => { BusStopLineManager_Data(player, LineManager, BusStop); });
+                panel.AddTabLine(BusStop.BusStopName, "ID : " + BusStop.Id, ItemUtils.GetIconIdByItemId(1112), _ => { BusStopLineManager_JSON(player, LineManager, BusStop.Id, true); });
             }
 
-            panel.AddButton("Sélectionner", (ui) =>
+            panel.AddButton("Sélectionner arrêt", (ui) =>
             {
                 player.ClosePanel(ui);
                 panel.SelectTab();
@@ -167,18 +169,45 @@ namespace MODRP_JobBus.Functions
             panel.Display();
         }
 
-        public void BusStopLineManager_Data(Player player, OrmManager.JobBus_LineManager LineManager, OrmManager.JobBus_BusStopManager BusStopManager)
+        public async void BusStopLineManager_Remove(Player player, OrmManager.JobBus_LineManager LineManager)
         {
+            Panel panel = Context.PanelHelper.Create("LineCreator | Bus Stop <> Line Manager", UIPanel.PanelType.TabPrice, player, () => BusStopLineManager_Add(player, LineManager));
 
+            var Data = await OrmManager.JobBus_BusStopManager.QueryAll();
+
+            foreach (OrmManager.JobBus_BusStopManager BusStop in Data)
+            {
+                panel.AddTabLine(BusStop.BusStopName, "ID : " + BusStop.Id, ItemUtils.GetIconIdByItemId(1112), _ => { BusStopLineManager_JSON(player, LineManager, BusStop.Id, false); });
+            }
+
+            panel.AddButton("Retirer", (ui) =>
+            {
+                player.ClosePanel(ui);
+                panel.SelectTab();
+            });
+            panel.PreviousButton();
+            panel.CloseButton();
+            panel.Display();
         }
 
-        public void BusStopLineManager_Remove(Player player, OrmManager.JobBus_LineManager LineManager)
+        public void BusStopLineManager_JSON(Player player, OrmManager.JobBus_LineManager LineManager, int BusStopID, bool AddOrRemove)
         {
+            List<int> data;
+            string json = File.ReadAllText(LineManager.BusStopID);
+            data = JsonConvert.DeserializeObject<List<int>>(json);
 
-        }
+            if (AddOrRemove)
+            {
+                data.Add(BusStopID);
+                player.Notify("LineCreator", $"L'arrêt de bus ayant pour ID \"{BusStopID}\" vient d'être ajouté à la ligne de bus \"{LineManager.LineName}\"");
+            } else
+            {
+                data.Remove(BusStopID);
+                player.Notify("LineCreator", $"L'arrêt de bus ayant pour ID \"{BusStopID}\" vient d'être retiré de la ligne de bus \"{LineManager.LineName}\"");
+            }
 
-        public void BusStopLineManager_JSON(OrmManager.JobBus_LineManager LineManager, int BusStopID)
-        {
+            string updatedJson = JsonConvert.SerializeObject(data, Formatting.Indented);
+            File.WriteAllText(LineManager.BusStopID, updatedJson);
 
         }
         #endregion
