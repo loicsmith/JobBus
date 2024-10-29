@@ -17,13 +17,13 @@ namespace MODRP_JobBus.Functions
 {
     internal class LinePlayable
     {
+        bool LineInProgress = false;
+
         public ModKit.ModKit Context { get; set; }
 
         public void MainPanel(Player player)
         {
-            Console.WriteLine(player.GetVehicleId());
-
-            if (player.GetVehicleId() == 0 || player.GetVehicleId() == 0)
+            if (player.GetVehicleModel() == "Euro Lion's City 12" || player.GetVehicleModel() == "Fast Scoler 4")
             {
                 Panel panel = Context.PanelHelper.Create("SAE | Accueil", UIPanel.PanelType.Text, player, () => MainPanel(player));
 
@@ -83,8 +83,38 @@ namespace MODRP_JobBus.Functions
             }
             panel.AddButton("Choisir cette ligne", async (ui) =>
             {
+                if (LineInProgress == false)
+                {
+                    player.ClosePanel(ui);
+                    LineInProgress = true;
+                    await LinePlayable_Start(player, LineManager);
+                }
+                else
+                {
+                    LinePlayable_StopLine(player, LineManager);
+                }
+            });
+            panel.PreviousButton();
+            panel.CloseButton();
+            panel.Display();
+        }
+
+        public void LinePlayable_StopLine(Player player, OrmManager.JobBus_LineManager LineManager)
+        {
+            Panel panel = Context.PanelHelper.Create($"SAE | Ligne \"{LineManager.LineName}\"", UIPanel.PanelType.Text, player, () => LinePlayable_StopLine(player, LineManager));
+            panel.TextLines.Add($"Vous effectuez déja la ligne {LineManager.LineName} ! Souhaitez vous déposer les passagers sur le trottoir ?");
+
+            panel.AddButton("Oui", (ui) =>
+            {
                 player.ClosePanel(ui);
-                await LinePlayable_Start(player, LineManager);
+                LineInProgress = false;
+                player.DestroyAllVehicleCheckpoint();
+                player.setup.TargetDisableNavigation();
+            });
+
+            panel.AddButton("Non", (ui) =>
+            {
+                player.ClosePanel(ui);
             });
             panel.PreviousButton();
             panel.CloseButton();
@@ -104,6 +134,7 @@ namespace MODRP_JobBus.Functions
             {
                 var BusStopData = await OrmManager.JobBus_BusStopManager.Query(Data);
                 positions.Add(new Vector3(BusStopData.PositionX, BusStopData.PositionY, BusStopData.PositionZ));
+
                 BusStopName.Add(BusStopData.BusStopName);
             }
 
@@ -117,7 +148,7 @@ namespace MODRP_JobBus.Functions
 
             for (int i = 0; i < positions.Count; i++)
             {
-                if (player.GetVehicleId() == 0 || player.GetVehicleId() == 0)
+                if (player.GetVehicleModel() == "Euro Lion's City 12" || player.GetVehicleModel() == "Fast Scoler 4")
                 {
                     uint bus = player.GetVehicleId();
                     Vehicle vehicle = NetworkServer.spawned[bus].GetComponent<Vehicle>();
@@ -126,11 +157,19 @@ namespace MODRP_JobBus.Functions
 
                     checkpoints[i] = new NVehicleCheckpoint(player.netId, positions[i], async (c, vId) =>
                     {
-                        player.Notify("SAE", $"Arrêt de bus : \"{BusStopName}\"", NotificationManager.Type.Info);
+
+                        player.Notify("SAE", $"Arrêt de bus : \"{BusStopName[currentIndex]}\"", NotificationManager.Type.Info);
+                        player.Notify("SAE - Astuces", "N'oubliez pas d'agenouiller et d'ouvrir les portes du bus !", NotificationManager.Type.Info, 5f);
+
+                        while (!(vehicle.bus.HasAnyDoorOpened() && vehicle.bus.NetworkisKneelDown))
+                        {
+                            await Task.Delay(500);
+                        }
+
                         player.DestroyVehicleCheckpoint(c);
                         player.setup.TargetDisableNavigation();
-                        await Task.Delay(1000);
-
+                        player.Notify("SAE", "Les clients montent/descendent du bus..", NotificationManager.Type.Info, 5f);
+                        await Task.Delay(5000);
 
                         if (currentIndex < positions.Count - 1)
                         {
@@ -138,18 +177,21 @@ namespace MODRP_JobBus.Functions
                             player.setup.TargetSetGPSTarget(positions[currentIndex + 1]);
                             player.Notify("SAE", $"Prochain arrêt de bus : \"{BusStopName[currentIndex + 1]}\"", NotificationManager.Type.Info);
 
-
-                            vehicle.bus.rightText = BusStopName[currentIndex + 1];
-
+                            vehicle.bus.NetworkrightText = BusStopName[currentIndex + 1];
 
                         }
                         else
                         {
+                            vehicle.bus.NetworkgirouetteText = "";
+                            vehicle.bus.NetworkrightText = "";
+                            vehicle.bus.Networkline = "";
                             player.Notify("SAE", $"Vous êtes au terminus de la ligne de bus \"{LineManager.LineName}\"", NotificationManager.Type.Success);
+                            LineInProgress = false;
                         }
 
 
-                        // chaque passage a
+                        // a chaque passage
+
                     });
                 }
                 else
@@ -165,8 +207,12 @@ namespace MODRP_JobBus.Functions
                 uint bus = player.GetVehicleId();
                 Vehicle vehicle = NetworkServer.spawned[bus].GetComponent<Vehicle>();
 
-                vehicle.bus.girouetteText = "Destination";
-                vehicle.bus.rightText = BusStopName[1];
+                player.Notify("SAE", $"Démarrage de la ligne de bus {LineManager.LineName}, bon courage !", NotificationManager.Type.Success, 10f);
+
+                player.Notify("SAE - Astuces", "Lorsque vous êtes à un arrêt de bus, n'oubliez pas d'agenouiller et d'ouvrir les portes du bus !", NotificationManager.Type.Info, 10f);
+                vehicle.bus.NetworkgirouetteText = "Destination\n" + BusStopName[BusStopName.Count - 1];
+                vehicle.bus.NetworkrightText = BusStopName[1];
+                vehicle.bus.Networkline = LineManager.LineNumber;
             }
         }
 

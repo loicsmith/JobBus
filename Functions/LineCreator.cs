@@ -49,20 +49,38 @@ namespace MODRP_JobBus.Functions
             panel.TextLines.Add("Veuillez saisir un nom afin de créer une ligne de bus");
             panel.SetInputPlaceholder("Nom de la ligne de bus..");
 
+            panel.AddButton("Valider",  (ui) =>
+            {
+                string LineName = ui.inputText;
+                player.ClosePanel(ui);
+                LineManager_AddNumber(player, LineName);
+                
+            });
+            panel.PreviousButton();
+            panel.CloseButton();
+            panel.Display();
+        }
+
+        public void LineManager_AddNumber(Player player, string _LineName)
+        {
+            Panel panel = Context.PanelHelper.Create("LineCreator | Add Line", UIPanel.PanelType.Input, player, () => LineManager_Add(player));
+            panel.TextLines.Add("Veuillez saisir un numéro afin de créer une ligne de bus");
+            panel.SetInputPlaceholder("Numéro de la ligne de bus..");
+
             panel.AddButton("Valider", async (ui) =>
             {
-                string _LineName = ui.inputText;
-
+                string _LineNumber = ui.inputText;
+                
                 int[] dataArray = { };
 
                 string JsonData = JsonConvert.SerializeObject(dataArray);
 
-                OrmManager.JobBus_LineManager instance = new OrmManager.JobBus_LineManager { LineName = _LineName, BusStopID = JsonData };
+                OrmManager.JobBus_LineManager instance = new OrmManager.JobBus_LineManager { LineName = _LineName, LineNumber = _LineNumber, BusStopID = JsonData };
                 var result = await instance.Save();
 
                 if (result)
                 {
-                    player.Notify("LineCreator", $"La ligne de bus portant le nom de \"{_LineName}\" vient d'être crée", NotificationManager.Type.Success);
+                    player.Notify("LineCreator", $"La ligne de bus portant le nom de \"{_LineName}\" et ayant pour numéro \"{_LineNumber}\" vient d'être crée", NotificationManager.Type.Success);
                 }
                 else
                 {
@@ -80,6 +98,7 @@ namespace MODRP_JobBus.Functions
         {
             Panel panel = Context.PanelHelper.Create("LineCreator |  More Options", UIPanel.PanelType.Text, player, () => LineManager_MoreOptions(player, LineManager));
             panel.TextLines.Add($"Nom de la ligne : \"{LineManager.LineName}\"");
+            panel.TextLines.Add($"Numéro de la ligne : \"{LineManager.LineNumber}\"");
             panel.TextLines.Add($"ID de la ligne : \"{LineManager.Id}\"");
 
             panel.AddButton($"{TextFormattingHelper.Size("Liste arrêt de bus", 15)}", (ui) =>

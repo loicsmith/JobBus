@@ -16,6 +16,7 @@ namespace MODRP_JobBus.Functions
             [AutoIncrement][PrimaryKey] public int Id { get; set; }
 
             public string LineName { get; set; }
+            public string LineNumber { get; set; }
             public string BusStopID { get; set; }
         }
 
