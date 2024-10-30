@@ -3,7 +3,7 @@
     public class JobBusConfig
     {
         public int CityHallId = 0;
-        public int BusId = 0;
+
         public float TaxPercentage = 0;
         public float PlayerReceivePercentage = 0;
 

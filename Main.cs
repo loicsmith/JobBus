@@ -2,6 +2,7 @@
 using Life.BizSystem;
 using Life.Network;
 using Life.UI;
+using Mirror;
 using ModKit.Helper;
 using ModKit.Interfaces;
 using ModKit.Internal;
@@ -13,6 +14,7 @@ using SQLite;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine.ProBuilder.Shapes;
 using _menu = AAMenu.Menu;
 
 namespace MODRP_JobBus.Main
@@ -50,8 +52,13 @@ namespace MODRP_JobBus.Main
 
             Console.WriteLine(_JobBusConfig.CityHallId);
 
+            Nova.server.OnPlayerDisconnectEvent += (NetworkConnection conn) =>
+            { 
+                LinePlayable.RemoveNetIDFromList(conn.connectionId);
+            };
 
         }
+
 
         private void InitConfig()
         {
@@ -101,10 +108,6 @@ namespace MODRP_JobBus.Main
             panel.AddTabLine($"{TextFormattingHelper.Color("CityHallId : ", TextFormattingHelper.Colors.Info)}" + $"{TextFormattingHelper.Color($"{_JobBusConfig.CityHallId}", TextFormattingHelper.Colors.Verbose)}", _ =>
             {
                 EditLineInConfig(player, "CityHallId");
-            });
-            panel.AddTabLine($"{TextFormattingHelper.Color("BusId : ", TextFormattingHelper.Colors.Info)}" + $"{TextFormattingHelper.Color($"{_JobBusConfig.BusId}", TextFormattingHelper.Colors.Verbose)}", _ =>
-            {
-                EditLineInConfig(player, "BusId");
             });
             panel.AddTabLine($"{TextFormattingHelper.Color("TaxPercentage : ", TextFormattingHelper.Colors.Info)}" + $"{TextFormattingHelper.Color($"{_JobBusConfig.TaxPercentage}", TextFormattingHelper.Colors.Verbose)}", _ =>
             {
@@ -158,17 +161,6 @@ namespace MODRP_JobBus.Main
                         if (int.TryParse(input, out int valueCity))
                         {
                             _JobBusConfig.CityHallId = valueCity;
-                        }
-                        else
-                        {
-                            player.Notify("JobBus", "Veuillez saisir un nombre entier.", NotificationManager.Type.Error);
-                        }
-                        break;
-                    case "BusId":
-                        // int
-                        if (int.TryParse(input, out int valueBus))
-                        {
-                            _JobBusConfig.BusId = valueBus;
                         }
                         else
                         {

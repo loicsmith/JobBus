@@ -19,7 +19,7 @@ namespace MODRP_JobBus.Functions
 {
     internal class LinePlayable
     {
-        bool LineInProgress = false;
+        List<uint> PlayerNetID = new List<uint>();
 
         public ModKit.ModKit Context { get; set; }
 
@@ -85,10 +85,10 @@ namespace MODRP_JobBus.Functions
             }
             panel.AddButton($"{TextFormattingHelper.Size("Choisir cette ligne", 15)}", async (ui) =>
             {
-                if (LineInProgress == false)
+                if (!PlayerNetID.Contains(player.setup.netId))
                 {
                     player.ClosePanel(ui);
-                    LineInProgress = true;
+                    PlayerNetID.Add(player.setup.netId);
                     await LinePlayable_Start(player, LineManager);
                 }
                 else
@@ -105,14 +105,21 @@ namespace MODRP_JobBus.Functions
         public void LinePlayable_StopLine(Player player, OrmManager.JobBus_LineManager LineManager)
         {
             Panel panel = Context.PanelHelper.Create($"SAE | Ligne \"{LineManager.LineName}\"", UIPanel.PanelType.Text, player, () => LinePlayable_StopLine(player, LineManager));
-            panel.TextLines.Add($"Vous effectuez déja la ligne {LineManager.LineName} ! Souhaitez vous déposer les passagers sur le trottoir ?");
+            panel.TextLines.Add($"Vous effectuez déja la ligne \"{LineManager.LineName}\" ! Souhaitez vous déposer les passagers sur le trottoir ?");
 
             panel.AddButton("Oui", (ui) =>
             {
                 player.ClosePanel(ui);
-                LineInProgress = false;
+                PlayerNetID.Remove(player.setup.netId);
                 player.DestroyAllVehicleCheckpoint();
                 player.setup.TargetDisableNavigation();
+
+                uint bus = player.GetVehicleId();
+                Vehicle vehicle = NetworkServer.spawned[bus].GetComponent<Vehicle>();
+
+                vehicle.bus.NetworkgirouetteText = "";
+                vehicle.bus.NetworkrightText = "";
+                vehicle.bus.Networkline = "";
             });
 
             panel.AddButton("Non", (ui) =>
@@ -123,6 +130,11 @@ namespace MODRP_JobBus.Functions
             panel.PreviousButton();
             panel.CloseButton();
             panel.Display();
+        }
+
+        public void RemoveNetIDFromList(int ConnID)
+        {
+           PlayerNetID.Remove((uint)ConnID);
         }
 
         public async Task LinePlayable_Start(Player player, OrmManager.JobBus_LineManager LineManager)
@@ -163,8 +175,7 @@ namespace MODRP_JobBus.Functions
                     {
 
                         player.Notify("SAE", $"Arrêt de bus : \"{BusStopName[currentIndex]}\"", NotificationManager.Type.Info);
-                        player.Notify("SAE - Astuces", "N'oubliez pas d'agenouiller et d'ouvrir les portes du bus !", NotificationManager.Type.Info, 5f);
-
+                        
                         while (!vehicle.bus.HasAnyDoorOpened() || !vehicle.bus.NetworkisKneelDown)
                         {
                             await Task.Delay(500);
@@ -177,8 +188,6 @@ namespace MODRP_JobBus.Functions
                         await Task.Delay(5000);
 
                         ReceiveMoney(player);
-
-                        player.Notify("SAE - Astuces", "Fermez les portes, retirez l'agenouillement du bus et redémarrez.", NotificationManager.Type.Info, 5f);
 
                         while (vehicle.bus.HasAnyDoorOpened() || vehicle.bus.NetworkisKneelDown)
                         {
@@ -202,7 +211,7 @@ namespace MODRP_JobBus.Functions
                             vehicle.bus.NetworkrightText = "";
                             vehicle.bus.Networkline = "";
                             player.Notify("SAE", $"Vous êtes au terminus de la ligne de bus \"{LineManager.LineName}\"", NotificationManager.Type.Success);
-                            LineInProgress = false;
+                            PlayerNetID.Remove(player.setup.netId);
                         }
                     });
                 }
@@ -221,9 +230,9 @@ namespace MODRP_JobBus.Functions
 
                 player.Notify("SAE", $"Démarrage de la ligne de bus {LineManager.LineName}, bon courage !", NotificationManager.Type.Success, 10f);
 
-                player.Notify("SAE - Astuces", "Lorsque vous êtes à un arrêt de bus, n'oubliez pas d'agenouiller et d'ouvrir les portes du bus !", NotificationManager.Type.Info, 10f);
+                player.SendText($"{TextFormattingHelper.Color("[ASTUCES]", TextFormattingHelper.Colors.Orange)} Lorsque vous êtes à un {TextFormattingHelper.Color("arrêt de bus", TextFormattingHelper.Colors.Info)}, n'oubliez pas {TextFormattingHelper.Color("d'agenouiller et d'ouvrir les portes du bus !", TextFormattingHelper.Colors.Orange)}");
                 vehicle.bus.NetworkgirouetteText = "Destination\n" + BusStopName[BusStopName.Count - 1];
-                vehicle.bus.NetworkrightText = BusStopName[1];
+                vehicle.bus.NetworkrightText = BusStopName[0];
                 vehicle.bus.Networkline = LineManager.LineNumber;
             }
         }
@@ -243,15 +252,24 @@ namespace MODRP_JobBus.Functions
             float PlayerReceivePercentage = Main.Main._JobBusConfig.PlayerReceivePercentage;
 
             float cityHallMoney = totalMoney * (taxPercentage / 100f);
-            float BusMoney = totalMoney * (PlayerReceivePercentage / 100f);
 
-            float playerMoney = totalMoney - cityHallMoney - BusMoney;
+            float playerMoney = totalMoney * (PlayerReceivePercentage / 100f); ;
 
-            Nova.biz.FetchBiz(Main.Main._JobBusConfig.CityHallId).Bank += cityHallMoney;
-            Nova.biz.FetchBiz(Main.Main._JobBusConfig.BusId).Bank += BusMoney;
-            player.AddBankMoney(playerMoney);
+            float BusMoney = totalMoney - cityHallMoney - playerMoney;
 
-            player.Notify("SAE", $"Après déduction, vous venez de reçevoir {playerMoney}€", NotificationManager.Type.Info);
+            if (Nova.biz.FetchBiz(Main.Main._JobBusConfig.CityHallId) != null)
+            {
+                Nova.biz.FetchBiz(Main.Main._JobBusConfig.CityHallId).Bank += Math.Round(cityHallMoney);
+                Nova.biz.FetchBiz(Main.Main._JobBusConfig.CityHallId).Save();
+            }
+
+            player.biz.Bank += Math.Round(BusMoney, 2);
+            player.biz.Save();
+
+            player.AddBankMoney(Math.Round(playerMoney, 2));
+            player.character.Save();
+
+            player.Notify("Gains", $"Vous venez de reçevoir {TextFormattingHelper.Color(Math.Round(playerMoney, 2).ToString(), TextFormattingHelper.Colors.Orange)}€", NotificationManager.Type.Info);
         }
     }
 }
