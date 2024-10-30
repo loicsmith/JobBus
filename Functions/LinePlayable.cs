@@ -1,4 +1,5 @@
-﻿using Life;
+﻿using FirstGearGames.Utilities.Structures;
+using Life;
 using Life.CheckpointSystem;
 using Life.Network;
 using Life.UI;
@@ -6,6 +7,7 @@ using Life.VehicleSystem;
 using Mirror;
 using ModKit.Helper;
 using ModKit.Utils;
+using MODRP_JobBus.Classes;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -29,11 +31,11 @@ namespace MODRP_JobBus.Functions
 
                 panel.TextLines.Add($"{TextFormattingHelper.Bold(TextFormattingHelper.Align("Informations :", TextFormattingHelper.Aligns.Center))}");
 
-                panel.TextLines.Add("Configuration : Prise de service d'une ligne");
-                panel.TextLines.Add("Ventes : Permet de vendre des tickets");
+                panel.TextLines.Add($"{TextFormattingHelper.Size("Configuration : Prise de service d'une ligne", 20)}");
+                panel.TextLines.Add($"{TextFormattingHelper.Size("Ventes : Permet de vendre des tickets", 20)}");
 
                 panel.NextButton("Configuration", () => { LinePlayable_AvailableLine(player); });
-                panel.NextButton("Ventes", () => { });
+                panel.NextButton($"{TextFormattingHelper.Size("Ventes (Indisponible)", 15)}", () => { });
 
                 panel.AddButton("Retour", ui => AAMenu.AAMenu.menu.BizPanel(player));
                 panel.CloseButton();
@@ -81,7 +83,7 @@ namespace MODRP_JobBus.Functions
 
                 index++;
             }
-            panel.AddButton("Choisir cette ligne", async (ui) =>
+            panel.AddButton($"{TextFormattingHelper.Size("Choisir cette ligne", 15)}", async (ui) =>
             {
                 if (LineInProgress == false)
                 {
@@ -91,6 +93,7 @@ namespace MODRP_JobBus.Functions
                 }
                 else
                 {
+                    player.ClosePanel(ui);
                     LinePlayable_StopLine(player, LineManager);
                 }
             });
@@ -116,6 +119,7 @@ namespace MODRP_JobBus.Functions
             {
                 player.ClosePanel(ui);
             });
+
             panel.PreviousButton();
             panel.CloseButton();
             panel.Display();
@@ -161,24 +165,27 @@ namespace MODRP_JobBus.Functions
                         player.Notify("SAE", $"Arrêt de bus : \"{BusStopName[currentIndex]}\"", NotificationManager.Type.Info);
                         player.Notify("SAE - Astuces", "N'oubliez pas d'agenouiller et d'ouvrir les portes du bus !", NotificationManager.Type.Info, 5f);
 
-                        while (!(vehicle.bus.HasAnyDoorOpened() && vehicle.bus.NetworkisKneelDown))
+                        while (!vehicle.bus.HasAnyDoorOpened() || !vehicle.bus.NetworkisKneelDown)
                         {
                             await Task.Delay(500);
                         }
-
                         player.DestroyVehicleCheckpoint(c);
                         player.setup.TargetDisableNavigation();
                         player.Notify("SAE", "Les clients montent/descendent du bus..", NotificationManager.Type.Info, 5f);
                         player.setup.NetworkisFreezed = true;
-                        
-                        await Task.Delay(5000);
-                        while (!(vehicle.bus.HasAnyDoorOpened() && vehicle.bus.NetworkisKneelDown))
-                        {
-                            await Task.Delay(500);   
-                        }
-                        
-                        player.setup.NetworkisFreezed = false;
 
+                        await Task.Delay(5000);
+
+                        ReceiveMoney(player);
+
+                        player.Notify("SAE - Astuces", "Fermez les portes, retirez l'agenouillement du bus et redémarrez.", NotificationManager.Type.Info, 5f);
+
+                        while (vehicle.bus.HasAnyDoorOpened() || vehicle.bus.NetworkisKneelDown)
+                        {
+                            await Task.Delay(500);
+                        }
+
+                        player.setup.NetworkisFreezed = false;
 
                         if (currentIndex < positions.Count - 1)
                         {
@@ -197,10 +204,6 @@ namespace MODRP_JobBus.Functions
                             player.Notify("SAE", $"Vous êtes au terminus de la ligne de bus \"{LineManager.LineName}\"", NotificationManager.Type.Success);
                             LineInProgress = false;
                         }
-
-
-                        // a chaque passage
-
                     });
                 }
                 else
@@ -225,5 +228,30 @@ namespace MODRP_JobBus.Functions
             }
         }
 
+        public void ReceiveMoney(Player player)
+        {
+            int customerCount = UnityEngine.Random.Range(Main.Main._JobBusConfig.MinCustomerPerBusStop, Main.Main._JobBusConfig.MaxCustomerPerBusStop);
+            float totalMoney = 0f;
+
+            for (int i = 0; i < customerCount; i++)
+            {
+                float money = UnityEngine.Random.Range(Main.Main._JobBusConfig.MinMoneyPerCustomer, Main.Main._JobBusConfig.MaxMoneyPerCustomer + 1);
+                totalMoney += money;
+            }
+
+            float taxPercentage = Main.Main._JobBusConfig.TaxPercentage;
+            float PlayerReceivePercentage = Main.Main._JobBusConfig.PlayerReceivePercentage;
+
+            float cityHallMoney = totalMoney * (taxPercentage / 100f);
+            float BusMoney = totalMoney * (PlayerReceivePercentage / 100f);
+
+            float playerMoney = totalMoney - cityHallMoney - BusMoney;
+
+            Nova.biz.FetchBiz(Main.Main._JobBusConfig.CityHallId).Bank += cityHallMoney;
+            Nova.biz.FetchBiz(Main.Main._JobBusConfig.BusId).Bank += BusMoney;
+            player.AddBankMoney(playerMoney);
+
+            player.Notify("SAE", $"Après déduction, vous venez de reçevoir {playerMoney}€", NotificationManager.Type.Info);
+        }
     }
 }

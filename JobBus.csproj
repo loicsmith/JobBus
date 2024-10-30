@@ -31,6 +31,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Classes\JobBusConfig.cs" />
     <Compile Include="Functions\LineCreator.cs" />
     <Compile Include="Functions\LinePlayable.cs" />
     <Compile Include="Functions\OrmManager.cs" />
