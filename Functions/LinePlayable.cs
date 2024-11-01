@@ -257,7 +257,7 @@ namespace MODRP_JobBus.Functions
 
             if (Nova.biz.FetchBiz(Main.Main._JobBusConfig.CityHallId) != null)
             {
-                Nova.biz.FetchBiz(Main.Main._JobBusConfig.CityHallId).Bank += Math.Round(cityHallMoney);
+                Nova.biz.FetchBiz(Main.Main._JobBusConfig.CityHallId).Bank += Math.Round(cityHallMoney, 2);
                 Nova.biz.FetchBiz(Main.Main._JobBusConfig.CityHallId).Save();
             }
 
