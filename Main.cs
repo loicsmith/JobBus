@@ -23,6 +23,7 @@ namespace MODRP_JobBus.Main
     {
         public LineCreator LineCreator = new LineCreator();
         public LinePlayable LinePlayable = new LinePlayable();
+        public DataManager DataManager = new DataManager();
 
         public static string ConfigDirectoryPath;
         public static string ConfigJobBusPath;
@@ -34,6 +35,7 @@ namespace MODRP_JobBus.Main
 
             LineCreator.Context = this;
             LinePlayable.Context = this;
+            DataManager.Context = this;
         }
 
         public override void OnPluginInit()
@@ -48,8 +50,6 @@ namespace MODRP_JobBus.Main
 
             InitConfig();
             _JobBusConfig = LoadConfigFile(ConfigJobBusPath);
-
-            Console.WriteLine(_JobBusConfig.CityHallId);
 
             Nova.server.OnPlayerDisconnectEvent += (NetworkConnection conn) =>
             { 

@@ -12,5 +12,7 @@
 
         public float MinMoneyPerCustomer = 0f;
         public float MaxMoneyPerCustomer = 0f;
+
+        public string UrlWebhookForNotifyService = "";
     }
 }

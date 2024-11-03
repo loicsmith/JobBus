@@ -17,6 +17,8 @@ namespace MODRP_JobBus.Functions
 {
     internal class LinePlayable
     {
+        public DataManager DataManager = new DataManager();
+
         List<uint> PlayerNetID = new List<uint>();
 
         public ModKit.ModKit Context { get; set; }
@@ -83,7 +85,7 @@ namespace MODRP_JobBus.Functions
             }
             panel.AddButton($"{TextFormattingHelper.Size("Choisir cette ligne", 15)}", async (ui) =>
             {
-                if (!PlayerNetID.Contains(player.setup.netId))
+                if (!PlayerNetID.Contains(player.setup.netId) && !DataManager.busLineDictionary.ContainsKey(player.setup.netId))
                 {
                     player.ClosePanel(ui);
                     PlayerNetID.Add(player.setup.netId);
@@ -109,6 +111,7 @@ namespace MODRP_JobBus.Functions
             {
                 player.ClosePanel(ui);
                 PlayerNetID.Remove(player.setup.netId);
+                DataManager.BusDriver_StopLine(player.setup.netId);
                 player.DestroyAllVehicleCheckpoint();
                 player.setup.TargetDisableNavigation();
 
@@ -132,7 +135,8 @@ namespace MODRP_JobBus.Functions
 
         public void RemoveNetIDFromList(int ConnID)
         {
-           PlayerNetID.Remove((uint)ConnID);
+            PlayerNetID.Remove((uint)ConnID);
+            DataManager.busLineDictionary.Remove((uint)ConnID);
         }
 
         public async Task LinePlayable_Start(Player player, OrmManager.JobBus_LineManager LineManager)
@@ -144,13 +148,19 @@ namespace MODRP_JobBus.Functions
 
             List<String> BusStopName = new List<String>();
 
+            int TotalBusStopNumber = 0;
+
             foreach (var Data in dataList)
             {
                 var BusStopData = await OrmManager.JobBus_BusStopManager.Query(Data);
                 positions.Add(new Vector3(BusStopData.PositionX, BusStopData.PositionY, BusStopData.PositionZ));
 
                 BusStopName.Add(BusStopData.BusStopName);
+
+                TotalBusStopNumber++;
             }
+
+            DataManager.BusDriver_StartLine(player, LineManager, BusStopName[0], TotalBusStopNumber);
 
             if (positions.Count == 0)
             {
@@ -173,7 +183,9 @@ namespace MODRP_JobBus.Functions
                     {
 
                         player.Notify("SAE", $"Arrêt de bus : \"{BusStopName[currentIndex]}\"", NotificationManager.Type.Info);
-                        
+
+                        DataManager.BusDriver_BusStop(player.setup.netId, BusStopName[currentIndex], currentIndex);
+
                         while (!vehicle.bus.HasAnyDoorOpened() || !vehicle.bus.NetworkisKneelDown)
                         {
                             await Task.Delay(500);
@@ -210,6 +222,7 @@ namespace MODRP_JobBus.Functions
                             vehicle.bus.Networkline = "";
                             player.Notify("SAE", $"Vous êtes au terminus de la ligne de bus \"{LineManager.LineName}\"", NotificationManager.Type.Success);
                             PlayerNetID.Remove(player.setup.netId);
+                            DataManager.BusDriver_StopLine(player.setup.netId);
                         }
                     });
                 }
