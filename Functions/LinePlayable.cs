@@ -121,6 +121,7 @@ namespace MODRP_JobBus.Functions
                 vehicle.bus.NetworkgirouetteText = "";
                 vehicle.bus.NetworkrightText = "";
                 vehicle.bus.Networkline = "";
+                vehicle.bus.NetworkbusColor = Color.black;
             });
 
             panel.AddButton("Non", (ui) =>
@@ -160,7 +161,7 @@ namespace MODRP_JobBus.Functions
                 TotalBusStopNumber++;
             }
 
-            DataManager.BusDriver_StartLine(player, LineManager, BusStopName[0], TotalBusStopNumber);
+            DataManager.BusDriver_StartLine(player, LineManager, BusStopName[0], TotalBusStopNumber, BusStopName[1]);
 
             if (positions.Count == 0)
             {
@@ -184,12 +185,14 @@ namespace MODRP_JobBus.Functions
 
                         player.Notify("SAE", $"Arrêt de bus : \"{BusStopName[currentIndex]}\"", NotificationManager.Type.Info);
 
-                        DataManager.BusDriver_BusStop(player.setup.netId, BusStopName[currentIndex], currentIndex);
-
                         while (!vehicle.bus.HasAnyDoorOpened() || !vehicle.bus.NetworkisKneelDown)
                         {
                             await Task.Delay(500);
                         }
+
+                        string nextBusStop = (currentIndex + 1 < BusStopName.Count) ? BusStopName[currentIndex + 1] : "Aucun";
+                        DataManager.BusDriver_BusStop(player.setup.netId, BusStopName[currentIndex], currentIndex + 1, nextBusStop);
+
                         player.DestroyVehicleCheckpoint(c);
                         player.setup.TargetDisableNavigation();
                         player.Notify("SAE", "Les clients montent/descendent du bus..", NotificationManager.Type.Info, 5f);
@@ -220,6 +223,8 @@ namespace MODRP_JobBus.Functions
                             vehicle.bus.NetworkgirouetteText = "";
                             vehicle.bus.NetworkrightText = "";
                             vehicle.bus.Networkline = "";
+                            vehicle.bus.NetworkbusColor = Color.black;
+
                             player.Notify("SAE", $"Vous êtes au terminus de la ligne de bus \"{LineManager.LineName}\"", NotificationManager.Type.Success);
                             PlayerNetID.Remove(player.setup.netId);
                             DataManager.BusDriver_StopLine(player.setup.netId);
@@ -245,6 +250,10 @@ namespace MODRP_JobBus.Functions
                 vehicle.bus.NetworkgirouetteText = "Destination\n" + BusStopName[BusStopName.Count - 1];
                 vehicle.bus.NetworkrightText = BusStopName[0];
                 vehicle.bus.Networkline = LineManager.LineNumber;
+                if (ColorUtility.TryParseHtmlString(LineManager.LineColor, out Color color))
+                {
+                    vehicle.bus.NetworkbusColor = color;
+                }
             }
         }
 

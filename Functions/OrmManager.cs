@@ -11,6 +11,7 @@ namespace MODRP_JobBus.Functions
 
             public string LineName { get; set; }
             public string LineNumber { get; set; }
+            public string LineColor { get; set; }
             public string BusStopID { get; set; }
         }
 

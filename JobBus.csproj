@@ -35,6 +35,7 @@
     <Compile Include="Functions\DataManager.cs" />
     <Compile Include="Functions\LineCreator.cs" />
     <Compile Include="Functions\LinePlayable.cs" />
+    <Compile Include="Functions\LineViewer.cs" />
     <Compile Include="Functions\OrmManager.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -53,7 +53,7 @@ namespace MODRP_JobBus.Functions
             {
                 string LineName = ui.inputText;
                 player.ClosePanel(ui);
-                LineManager_AddNumber(player, LineName);
+                LineManager_AddColor(player, LineName);
                 
             });
             panel.PreviousButton();
@@ -61,7 +61,25 @@ namespace MODRP_JobBus.Functions
             panel.Display();
         }
 
-        public void LineManager_AddNumber(Player player, string _LineName)
+        public void LineManager_AddColor(Player player, string LineName)
+        {
+            Panel panel = Context.PanelHelper.Create("LineCreator | Add Line", UIPanel.PanelType.Input, player, () => LineManager_Add(player));
+            panel.TextLines.Add("Veuillez saisir une couleur hexadécimal afin de créer une ligne de bus");
+            panel.SetInputPlaceholder("Couleur Hexadécimal (#000000)....");
+
+            panel.AddButton("Valider", (ui) =>
+            {
+                string LineColor = ui.inputText;
+                player.ClosePanel(ui);
+                LineManager_AddNumber(player, LineName, LineColor);
+
+            });
+            panel.PreviousButton();
+            panel.CloseButton();
+            panel.Display();
+        }
+
+        public void LineManager_AddNumber(Player player, string _LineName, string _LineColor)
         {
             Panel panel = Context.PanelHelper.Create("LineCreator | Add Line", UIPanel.PanelType.Input, player, () => LineManager_Add(player));
             panel.TextLines.Add("Veuillez saisir un numéro afin de créer une ligne de bus");
@@ -75,7 +93,7 @@ namespace MODRP_JobBus.Functions
 
                 string JsonData = JsonConvert.SerializeObject(dataArray);
 
-                OrmManager.JobBus_LineManager instance = new OrmManager.JobBus_LineManager { LineName = _LineName, LineNumber = _LineNumber, BusStopID = JsonData };
+                OrmManager.JobBus_LineManager instance = new OrmManager.JobBus_LineManager { LineName = _LineName, LineNumber = _LineNumber, LineColor = _LineColor, BusStopID = JsonData };
                 var result = await instance.Save();
 
                 if (result)

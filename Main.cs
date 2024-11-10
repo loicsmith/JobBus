@@ -24,6 +24,7 @@ namespace MODRP_JobBus.Main
         public LineCreator LineCreator = new LineCreator();
         public LinePlayable LinePlayable = new LinePlayable();
         public DataManager DataManager = new DataManager();
+        public LineViewer LineViewer = new LineViewer();
 
         public static string ConfigDirectoryPath;
         public static string ConfigJobBusPath;
@@ -36,6 +37,7 @@ namespace MODRP_JobBus.Main
             LineCreator.Context = this;
             LinePlayable.Context = this;
             DataManager.Context = this;
+            LineViewer.Context = this;
         }
 
         public override void OnPluginInit()
@@ -131,6 +133,10 @@ namespace MODRP_JobBus.Main
             panel.AddTabLine($"{TextFormattingHelper.Color("MaxMoneyPerCustomer : ", TextFormattingHelper.Colors.Info)}" + $"{TextFormattingHelper.Color($"{_JobBusConfig.MaxMoneyPerCustomer}", TextFormattingHelper.Colors.Verbose)}", _ =>
             {
                 EditLineInConfig(player, "MaxMoneyPerCustomer");
+            });
+            panel.AddTabLine($"{TextFormattingHelper.Color("UrlWebhookForNotifyService : ", TextFormattingHelper.Colors.Info)}" + $"{TextFormattingHelper.Color($"{_JobBusConfig.UrlWebhookForNotifyService}", TextFormattingHelper.Colors.Verbose)}", _ =>
+            {
+                EditLineInConfig(player, "UrlWebhookForNotifyService");
             });
             panel.AddTabLine($"{TextFormattingHelper.Color("Appliquer la configuration", TextFormattingHelper.Colors.Success)}", _ =>
             {
@@ -233,6 +239,9 @@ namespace MODRP_JobBus.Main
                             player.Notify("JobBus", "Veuillez saisir un nombre valide.", NotificationManager.Type.Error);
                         }
                         break;
+                    case "UrlWebhookForNotifyService":
+                        _JobBusConfig.UrlWebhookForNotifyService = input;
+                        break;
                 }
                 panel.Previous();
             });
@@ -259,6 +268,17 @@ namespace MODRP_JobBus.Main
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 LineCreator.MainPanel(player);
+            });
+
+            _menu.AddProximityTabLine(PluginInformations, 1012, "Arrêt de bus - Informations voyageurs", (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                DataManager.MainPanel(player);
+            });
+            _menu.AddProximityTabLine(PluginInformations, 1172, "Arrêt de bus - Informations voyageurs", (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                DataManager.MainPanel(player);
             });
         }
     }
