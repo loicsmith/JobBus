@@ -90,6 +90,7 @@ namespace MODRP_JobBus.Functions
             Console.WriteLine(allValues);
             Console.WriteLine(busLineDictionary.Count);
 
+
             foreach (var entry in allValues)
             {
                 Console.WriteLine(entry.LineName);
