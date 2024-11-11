@@ -33,7 +33,7 @@ namespace MODRP_JobBus.Functions
                 panel.TextLines.Add($"{TextFormattingHelper.Size("Ventes : Permet de vendre des tickets", 20)}");
 
                 panel.NextButton("Configuration", () => { LinePlayable_AvailableLine(player); });
-                panel.NextButton($"{TextFormattingHelper.Size("Ventes", 20)}", () => { LinePlayable_TicketsBuy_List(player); });
+                panel.NextButton($"{TextFormattingHelper.Size("Ventes (Indisponible)", 15)}", () => { /*LinePlayable_TicketsBuy_List(player);*/ });
 
                 panel.AddButton("Retour", ui => AAMenu.AAMenu.menu.BizPanel(player));
                 panel.CloseButton();
