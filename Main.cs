@@ -11,7 +11,6 @@ using MODRP_JobBus.Classes;
 using MODRP_JobBus.Functions;
 using Newtonsoft.Json;
 using SQLite;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using _menu = AAMenu.Menu;
@@ -54,7 +53,7 @@ namespace MODRP_JobBus.Main
             _JobBusConfig = LoadConfigFile(ConfigJobBusPath);
 
             Nova.server.OnPlayerDisconnectEvent += (NetworkConnection conn) =>
-            { 
+            {
                 LinePlayable.RemoveNetIDFromList(conn.connectionId);
             };
 
@@ -134,7 +133,21 @@ namespace MODRP_JobBus.Main
             {
                 EditLineInConfig(player, "MaxMoneyPerCustomer");
             });
-            panel.AddTabLine($"{TextFormattingHelper.Color("UrlWebhookForNotifyService : ", TextFormattingHelper.Colors.Info)}" + $"{TextFormattingHelper.Color($"{_JobBusConfig.UrlWebhookForNotifyService}", TextFormattingHelper.Colors.Verbose)}", _ =>
+
+            panel.AddTabLine($"{TextFormattingHelper.Color("TicketHeure : ", TextFormattingHelper.Colors.Info)}" + $"{TextFormattingHelper.Color($"{_JobBusConfig.TicketHeure}", TextFormattingHelper.Colors.Verbose)}", _ =>
+            {
+                EditLineInConfig(player, "TicketHeure");
+            });
+            panel.AddTabLine($"{TextFormattingHelper.Color("TicketJournée : ", TextFormattingHelper.Colors.Info)}" + $"{TextFormattingHelper.Color($"{_JobBusConfig.TicketJournée}", TextFormattingHelper.Colors.Verbose)}", _ =>
+            {
+                EditLineInConfig(player, "TicketJournée");
+            });
+            panel.AddTabLine($"{TextFormattingHelper.Color("TicketMensuel : ", TextFormattingHelper.Colors.Info)}" + $"{TextFormattingHelper.Color($"{_JobBusConfig.TicketMensuel}", TextFormattingHelper.Colors.Verbose)}", _ =>
+            {
+                EditLineInConfig(player, "TicketMensuel");
+            });
+
+            panel.AddTabLine($"{TextFormattingHelper.Color("UrlWebhookForNotifyService (prochaine maj)", TextFormattingHelper.Colors.Info)}", _ =>
             {
                 EditLineInConfig(player, "UrlWebhookForNotifyService");
             });
@@ -239,6 +252,39 @@ namespace MODRP_JobBus.Main
                             player.Notify("JobBus", "Veuillez saisir un nombre valide.", NotificationManager.Type.Error);
                         }
                         break;
+                    case "TicketHeure":
+                        //float
+                        if (double.TryParse(input, out double valueTicketHeure))
+                        {
+                            _JobBusConfig.TicketHeure = valueTicketHeure;
+                        }
+                        else
+                        {
+                            player.Notify("JobBus", "Veuillez saisir un nombre valide.", NotificationManager.Type.Error);
+                        }
+                        break;
+                    case "TicketJournée":
+                        //float
+                        if (double.TryParse(input, out double valueTicketJournée))
+                        {
+                            _JobBusConfig.TicketJournée = valueTicketJournée;
+                        }
+                        else
+                        {
+                            player.Notify("JobBus", "Veuillez saisir un nombre valide.", NotificationManager.Type.Error);
+                        }
+                        break;
+                    case "TicketMensuel":
+                        //float
+                        if (double.TryParse(input, out double valueTicketMensuel))
+                        {
+                            _JobBusConfig.TicketMensuel = valueTicketMensuel;
+                        }
+                        else
+                        {
+                            player.Notify("JobBus", "Veuillez saisir un nombre valide.", NotificationManager.Type.Error);
+                        }
+                        break;
                     case "UrlWebhookForNotifyService":
                         _JobBusConfig.UrlWebhookForNotifyService = input;
                         break;
@@ -273,12 +319,12 @@ namespace MODRP_JobBus.Main
             _menu.AddProximityTabLine(PluginInformations, 1012, "Arrêt de bus - Informations voyageurs", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                DataManager.MainPanel(player);
+                LineViewer.MainPanel(player);
             });
             _menu.AddProximityTabLine(PluginInformations, 1172, "Arrêt de bus - Informations voyageurs", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                DataManager.MainPanel(player);
+                LineViewer.MainPanel(player);
             });
         }
     }

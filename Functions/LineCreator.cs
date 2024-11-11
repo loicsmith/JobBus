@@ -117,12 +117,18 @@ namespace MODRP_JobBus.Functions
             Panel panel = Context.PanelHelper.Create("LineCreator |  More Options", UIPanel.PanelType.Text, player, () => LineManager_MoreOptions(player, LineManager));
             panel.TextLines.Add($"Nom de la ligne : \"{LineManager.LineName}\"");
             panel.TextLines.Add($"Numéro de la ligne : \"{LineManager.LineNumber}\"");
+            panel.TextLines.Add($"Couleur de la ligne : \"{LineManager.LineColor}\"");
             panel.TextLines.Add($"ID de la ligne : \"{LineManager.Id}\"");
 
             panel.AddButton($"{TextFormattingHelper.Size("Liste arrêt de bus", 15)}", (ui) =>
             {
                 player.ClosePanel(ui);
                 LineManager_ListBusStop(player, LineManager);
+            });
+            panel.AddButton($"{TextFormattingHelper.Size("Modifier Ligne", 15)}", (ui) =>
+            {
+                player.ClosePanel(ui);
+                LineManager_Modify(player, LineManager);
             });
             panel.AddButton($"{TextFormattingHelper.Size("Supprimer Ligne", 15)}", (ui) =>
             {
@@ -165,6 +171,105 @@ namespace MODRP_JobBus.Functions
             panel.Display();
         }
 
+        public void LineManager_Modify(Player player, OrmManager.JobBus_LineManager LineManager)
+        {
+            Panel panel = Context.PanelHelper.Create("LineCreator | Modify Line", UIPanel.PanelType.Text, player, () => LineManager_Modify(player, LineManager));
+            panel.TextLines.Add($"Nom de la ligne : \"{LineManager.LineName}\"");
+            panel.TextLines.Add($"Numéro de la ligne : \"{LineManager.LineNumber}\"");
+            panel.TextLines.Add($"Couleur de la ligne : \"{LineManager.LineColor}\"");
+            panel.TextLines.Add($"ID de la ligne : \"{LineManager.Id}\"");
+
+            panel.NextButton($"{TextFormattingHelper.Size("Modfier Nom", 15)}", () =>
+            {
+                LineManager_ModifyParam(player, LineManager, "ModifyName");
+            });
+            panel.NextButton($"{TextFormattingHelper.Size("Modfier Numéro", 15)}", () =>
+            {
+                LineManager_ModifyParam(player, LineManager, "ModifyNum");
+            });
+            panel.NextButton($"{TextFormattingHelper.Size("Modfier Couleur", 15)}", () =>
+            {
+                LineManager_ModifyParam(player, LineManager, "ModifyColor");
+            });
+            panel.PreviousButton();
+            panel.CloseButton();
+            panel.Display();
+        }
+
+        public void LineManager_ModifyParam(Player player, OrmManager.JobBus_LineManager LineManager, string Param)
+        {
+            Panel panel = Context.PanelHelper.Create("LineCreator | Modify Param Line", UIPanel.PanelType.Input, player, () => LineManager_ModifyParam(player, LineManager, Param));
+            switch (Param)
+            {
+                case "ModifyName":
+                    panel.TextLines.Add("Veuillez saisir le nouveau nom de la ligne");
+                    panel.SetInputPlaceholder("Nouveau nom de la ligne..");
+                    panel.AddButton("Valider", async (ui) =>
+                    {
+                        string input = ui.inputText;
+
+                        LineManager.LineName = input;
+                        var result = await LineManager.Save();
+
+                        if (result)
+                        {
+                            player.Notify("LineCreator", $"Le nom de la ligne de bus vient d'être remplacé par \"{LineManager.LineName}\"", NotificationManager.Type.Success);
+                        }
+                        else
+                        {
+                            player.Notify("LineCreator", $"Une erreur est survenue lors de la modification du nom", NotificationManager.Type.Error);
+                        }
+                        LineManager_Main(player);
+                    });
+                    break;
+                case "ModifyNum":
+                    panel.TextLines.Add("Veuillez saisir le nouveau numéro de la ligne");
+                    panel.SetInputPlaceholder("Nouveau numéro de la ligne..");
+                    panel.AddButton("Valider", async (ui) =>
+                    {
+                        string input = ui.inputText;
+
+                        LineManager.LineNumber = input;
+                        var result = await LineManager.Save();
+
+                        if (result)
+                        {
+                            player.Notify("LineCreator", $"Le numéro de la ligne de bus \"{LineManager.LineName}\" vient d'être remplacé par \"{LineManager.LineNumber}\"", NotificationManager.Type.Success);
+                        }
+                        else
+                        {
+                            player.Notify("LineCreator", $"Une erreur est survenue lors de la modification du numéro de la ligne de bus \"{LineManager.LineName}\"", NotificationManager.Type.Error);
+                        }
+                        LineManager_Main(player);
+                    });
+                    break;
+                case "ModifyColor":
+                    panel.TextLines.Add("Veuillez saisir la nouvelle couleur de la ligne");
+                    panel.SetInputPlaceholder("Nouvelle couleur de la ligne (#000000)..");
+                    panel.AddButton("Valider", async (ui) =>
+                    {
+                        string input = ui.inputText;
+
+                        LineManager.LineColor = input;
+                        var result = await LineManager.Save();
+
+                        if (result)
+                        {
+                            player.Notify("LineCreator", $"Le couleur de la ligne de bus \"{LineManager.LineName}\" vient d'être remplacé par \"{LineManager.LineColor}\"", NotificationManager.Type.Success);
+                        }
+                        else
+                        {
+                            player.Notify("LineCreator", $"Une erreur est survenue lors de la modification de la couleur de la ligne de bus \"{LineManager.LineName}\"", NotificationManager.Type.Error);
+                        }
+                        LineManager_Main(player);
+                    });
+                    break;
+            }
+            panel.PreviousButton();
+            panel.CloseButton();
+            panel.Display();
+
+        }
         public void LineManager_Delete(Player player, OrmManager.JobBus_LineManager LineManager)
         {
             Panel panel = Context.PanelHelper.Create("LineCreator | Delete Line", UIPanel.PanelType.Text, player, () => LineManager_Delete(player, LineManager));
@@ -366,7 +471,7 @@ namespace MODRP_JobBus.Functions
                 }
                 else
                 {
-                    player.Notify("LineCreator", $"L'arrêt de bus ayant pour ID \"{BusStopID}\" existe déjà la ligne de bus \"{LineManager.LineName}\" !", NotificationManager.Type.Error);
+                    player.Notify("LineCreator", $"L'arrêt de bus ayant pour ID \"{BusStopID}\" existe déjà sur la ligne de bus \"{LineManager.LineName}\" !", NotificationManager.Type.Error);
                 }
             }
             else

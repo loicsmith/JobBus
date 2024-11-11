@@ -7,20 +7,24 @@ namespace MODRP_JobBus.Functions
 {
     internal class LineViewer
     {
-        public DataManager DataManager = new DataManager();
 
         public ModKit.ModKit Context { get; set; }
 
-        // MainPanel pas utilisé le temps du bug
         public void MainPanel(Player player)
         {
             Panel panel = Context.PanelHelper.Create("Arrêt de bus - Informations voyageurs", UIPanel.PanelType.TabPrice, player, () => MainPanel(player));
 
-            foreach (var entry in DataManager.busLineDictionary)
+            if (DataManager.Instance.busLineDictionary.Count == 0)
             {
-                BusLineInfo lineInfo = entry.Value;
-
-                panel.AddTabLine($"{TextFormattingHelper.Size($"{lineInfo.LineNumber}", 15)}\n{TextFormattingHelper.Color(TextFormattingHelper.Size(TextFormattingHelper.LineHeight($"Arrêt actuel : {lineInfo.CurrentBusStopNumber} - Prochain arrêt : {lineInfo.NextBusStopName}", 15), 15), TextFormattingHelper.Colors.Purple)}", $"{lineInfo.CurrentBusStopNumber}/{lineInfo.TotalBusStops}", ItemUtils.GetIconIdByItemId(1012), _ => { });
+                panel.AddTabLine("Aucune ligne en cours", "", ItemUtils.GetIconIdByItemId(1012), _ => { });
+            }
+            else
+            {
+                foreach (var entry in DataManager.Instance.busLineDictionary)
+                {
+                    BusLineInfo lineInfo = entry.Value;
+                    panel.AddTabLine($"{TextFormattingHelper.Size($"{lineInfo.LineName}", 15)}\n{TextFormattingHelper.Color(TextFormattingHelper.Size(TextFormattingHelper.LineHeight($"Arrêt actuel : {lineInfo.CurrentBusStopName}\nProchain arrêt : {lineInfo.NextBusStopName}", 15), 15), TextFormattingHelper.Colors.Purple)}", $"Arrêt {lineInfo.CurrentBusStopNumber}/{lineInfo.TotalBusStops}", ItemUtils.GetIconIdByItemId(1012), _ => { });
+                }
             }
             panel.CloseButton();
             panel.Display();

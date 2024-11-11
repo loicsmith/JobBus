@@ -17,9 +17,7 @@ namespace MODRP_JobBus.Functions
 {
     internal class LinePlayable
     {
-        public DataManager DataManager = new DataManager();
-
-        List<uint> PlayerNetID = new List<uint>();
+        public List<uint> PlayerNetID = new List<uint>();
 
         public ModKit.ModKit Context { get; set; }
 
@@ -35,7 +33,7 @@ namespace MODRP_JobBus.Functions
                 panel.TextLines.Add($"{TextFormattingHelper.Size("Ventes : Permet de vendre des tickets", 20)}");
 
                 panel.NextButton("Configuration", () => { LinePlayable_AvailableLine(player); });
-                panel.NextButton($"{TextFormattingHelper.Size("Ventes (Indisponible)", 15)}", () => { });
+                panel.NextButton($"{TextFormattingHelper.Size("Ventes", 20)}", () => { LinePlayable_TicketsBuy_List(player); });
 
                 panel.AddButton("Retour", ui => AAMenu.AAMenu.menu.BizPanel(player));
                 panel.CloseButton();
@@ -47,6 +45,118 @@ namespace MODRP_JobBus.Functions
             }
 
         }
+        public void LinePlayable_TicketsBuy_List(Player player)
+        {
+            Panel panel = Context.PanelHelper.Create("SAE | Ventes de tickets", UIPanel.PanelType.TabPrice, player, () => LinePlayable_TicketsBuy_List(player));
+
+            foreach (Player p in Nova.server.GetPlayersInRange(5f, player.setup.transform.position))
+            {
+                // if (player.netId == p.netId) { }
+                //else
+                //  {
+                panel.AddTabLine(p.character.Firstname, "", ItemUtils.GetIconIdByItemId(1112), (ui) =>
+                {
+                    LinePlayable_TicketsBuy_ChoiceTicket(player, p);
+                });
+                //}
+            }
+            panel.NextButton("Sélectionner", () =>
+            {
+                panel.SelectTab();
+            });
+            panel.PreviousButton();
+            panel.CloseButton();
+            panel.Display();
+        }
+
+        public void LinePlayable_TicketsBuy_ChoiceTicket(Player player, Player CustomerPlayer)
+        {
+            Panel panel = Context.PanelHelper.Create("SAE | Choix du ticket", UIPanel.PanelType.Text, player, () => LinePlayable_TicketsBuy_ChoiceTicket(player, CustomerPlayer));
+
+            panel.TextLines.Add($"Client : {CustomerPlayer.character.Firstname}");
+            panel.NextButton("Tickets Heure", () =>
+            {
+                LinePlayable_TicketsBuy_BuyTicket(player, CustomerPlayer, "Heure");
+            });
+            panel.NextButton("Tickets Journée", () =>
+            {
+                LinePlayable_TicketsBuy_BuyTicket(player, CustomerPlayer, "Journée");
+            });
+            panel.NextButton("Tickets Montée", () =>
+            {
+                LinePlayable_TicketsBuy_BuyTicket(player, CustomerPlayer, "Mensuel");
+            });
+            panel.PreviousButton();
+            panel.CloseButton();
+            panel.Display();
+        }
+
+        public void LinePlayable_TicketsBuy_BuyTicket(Player player, Player CustomerPlayer, string Param)
+        {
+            Panel panel = Context.PanelHelper.Create("SAE | Impression du ticket", UIPanel.PanelType.Text, player, () => LinePlayable_TicketsBuy_BuyTicket(player, CustomerPlayer, Param));
+
+            panel.TextLines.Add($"Client : {CustomerPlayer.character.Firstname}");
+            panel.TextLines.Add($"Type : Ticket {Param}");
+
+            switch (Param)
+            {
+                case "Heure":
+                    panel.AddButton("Impression", (ui) =>
+                    {
+                        player.ClosePanel(ui);
+                        LinePlayable_TicketsBuy_BuyTicketValidate(player, CustomerPlayer, "Heure", Main.Main._JobBusConfig.TicketHeure);
+                    });
+                    break;
+                case "Journée":
+                    panel.AddButton("Impression", (ui) =>
+                    {
+                        player.ClosePanel(ui);
+                        LinePlayable_TicketsBuy_BuyTicketValidate(player, CustomerPlayer, "Journée", Main.Main._JobBusConfig.TicketJournée);
+                    });
+                    break;
+                case "Mensuel":
+                    panel.AddButton("Impression", (ui) =>
+                    {
+                        player.ClosePanel(ui);
+                        LinePlayable_TicketsBuy_BuyTicketValidate(player, CustomerPlayer, "Mensuel", Main.Main._JobBusConfig.TicketMensuel);
+                    });
+                    break;
+            }
+            panel.PreviousButton();
+            panel.CloseButton();
+            panel.Display();
+        }
+
+        public void LinePlayable_TicketsBuy_BuyTicketValidate(Player player, Player CustomerPlayer, string Param, double Price)
+        {
+            Panel panel = Context.PanelHelper.Create("Impression du ticket", UIPanel.PanelType.Text, CustomerPlayer, () => LinePlayable_TicketsBuy_BuyTicketValidate(player, CustomerPlayer, Param, Price));
+            panel.TextLines.Add($"{TextFormattingHelper.Align(TextFormattingHelper.Bold("Achat d'un ticket"), TextFormattingHelper.Aligns.Center)}");
+            panel.TextLines.Add($"{TextFormattingHelper.Bold("Ticket : ")}" + $"{Param}");
+            panel.TextLines.Add($"{TextFormattingHelper.Bold("Prix : ")}" + $"{Price}");
+            panel.AddButton($"Payer", (ui) =>
+            {
+                if (CustomerPlayer.character.Money >= Price)
+                {
+                    player.biz.Bank += Price;
+                    player.biz.Save();
+
+                    CustomerPlayer.character.Money -= Price;
+
+                    player.ClosePanel(ui);
+
+                    player.Notify("Gains", $"Vous venez de reçevoir {TextFormattingHelper.Color(Price.ToString(), TextFormattingHelper.Colors.Orange)}€", NotificationManager.Type.Info);
+                    CustomerPlayer.Notify("Ticket", $"Vous venez d'acheter un ticket {Param} pour {Price}€");
+                }
+                else
+                {
+                    CustomerPlayer.Notify("Pas assez d'argent !", $"Vous n'avez pas {Price}€ dans vos poches !", NotificationManager.Type.Error);
+                }
+            });
+
+            panel.CloseButton();
+            panel.Display();
+        }
+
 
         public async void LinePlayable_AvailableLine(Player player)
         {
@@ -85,7 +195,7 @@ namespace MODRP_JobBus.Functions
             }
             panel.AddButton($"{TextFormattingHelper.Size("Choisir cette ligne", 15)}", async (ui) =>
             {
-                if (!PlayerNetID.Contains(player.setup.netId) && !DataManager.busLineDictionary.ContainsKey(player.setup.netId))
+                if (!PlayerNetID.Contains(player.setup.netId) && !DataManager.Instance.busLineDictionary.ContainsKey(player.setup.netId))
                 {
                     player.ClosePanel(ui);
                     PlayerNetID.Add(player.setup.netId);
@@ -111,7 +221,7 @@ namespace MODRP_JobBus.Functions
             {
                 player.ClosePanel(ui);
                 PlayerNetID.Remove(player.setup.netId);
-                DataManager.BusDriver_StopLine(player.setup.netId);
+                DataManager.Instance.BusDriver_StopLine(player.setup.netId);
                 player.DestroyAllVehicleCheckpoint();
                 player.setup.TargetDisableNavigation();
 
@@ -137,7 +247,7 @@ namespace MODRP_JobBus.Functions
         public void RemoveNetIDFromList(int ConnID)
         {
             PlayerNetID.Remove((uint)ConnID);
-            DataManager.busLineDictionary.Remove((uint)ConnID);
+            DataManager.Instance.busLineDictionary.Remove((uint)ConnID);
         }
 
         public async Task LinePlayable_Start(Player player, OrmManager.JobBus_LineManager LineManager)
@@ -161,8 +271,7 @@ namespace MODRP_JobBus.Functions
                 TotalBusStopNumber++;
             }
 
-            DataManager.BusDriver_StartLine(player, LineManager, BusStopName[0], TotalBusStopNumber, BusStopName[1]);
-
+            DataManager.Instance.BusDriver_StartLine(player, LineManager, BusStopName[0], TotalBusStopNumber, BusStopName[1]);
             if (positions.Count == 0)
             {
                 player.Notify("SAE", $"Erreur, aucun arrêt n'a été trouvé sur la ligne de bus \"{LineManager.LineName}\"", NotificationManager.Type.Error);
@@ -191,7 +300,7 @@ namespace MODRP_JobBus.Functions
                         }
 
                         string nextBusStop = (currentIndex + 1 < BusStopName.Count) ? BusStopName[currentIndex + 1] : "Aucun";
-                        DataManager.BusDriver_BusStop(player.setup.netId, BusStopName[currentIndex], currentIndex + 1, nextBusStop);
+                        DataManager.Instance.BusDriver_BusStop(player.setup.netId, BusStopName[currentIndex], currentIndex + 1, nextBusStop);
 
                         player.DestroyVehicleCheckpoint(c);
                         player.setup.TargetDisableNavigation();
@@ -227,7 +336,7 @@ namespace MODRP_JobBus.Functions
 
                             player.Notify("SAE", $"Vous êtes au terminus de la ligne de bus \"{LineManager.LineName}\"", NotificationManager.Type.Success);
                             PlayerNetID.Remove(player.setup.netId);
-                            DataManager.BusDriver_StopLine(player.setup.netId);
+                            DataManager.Instance.BusDriver_StopLine(player.setup.netId);
                         }
                     });
                 }
