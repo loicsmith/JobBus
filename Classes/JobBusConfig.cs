@@ -1,4 +1,4 @@
-﻿namespace MODRP_JobBus.Classes
+﻿namespace JobBus.Classes
 {
     public class JobBusConfig
     {

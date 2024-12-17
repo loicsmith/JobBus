@@ -3,7 +3,7 @@ using Life.UI;
 using ModKit.Helper;
 using ModKit.Utils;
 
-namespace MODRP_JobBus.Functions
+namespace JobBus.Functions
 {
     internal class LineViewer
     {

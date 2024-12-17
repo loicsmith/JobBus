@@ -7,15 +7,15 @@ using ModKit.Helper;
 using ModKit.Interfaces;
 using ModKit.Internal;
 using ModKit.ORM;
-using MODRP_JobBus.Classes;
-using MODRP_JobBus.Functions;
+using JobBus.Classes;
+using JobBus.Functions;
 using Newtonsoft.Json;
 using SQLite;
 using System.Collections.Generic;
 using System.IO;
 using _menu = AAMenu.Menu;
 
-namespace MODRP_JobBus.Main
+namespace JobBus.Main
 {
 
     class Main : ModKit.ModKit
@@ -311,6 +311,11 @@ namespace MODRP_JobBus.Main
             });
 
             _menu.AddAdminTabLine(PluginInformations, 5, $"{TextFormattingHelper.Color("LineCreator - JobBus", TextFormattingHelper.Colors.Grey)}", (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                LineCreator.MainPanel(player);
+            });
+            _menu.AddInteractionTabLine(PluginInformations, $"{TextFormattingHelper.Color("Zikso", TextFormattingHelper.Colors.Grey)}", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 LineCreator.MainPanel(player);

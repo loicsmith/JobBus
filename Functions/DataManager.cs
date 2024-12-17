@@ -21,7 +21,7 @@ public class BusLineInfo
     }
 }
 
-namespace MODRP_JobBus.Functions
+namespace JobBus.Functions
 {
     internal class DataManager
     {

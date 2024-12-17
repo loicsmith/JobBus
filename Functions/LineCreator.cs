@@ -6,7 +6,7 @@ using ModKit.Utils;
 using Newtonsoft.Json;
 using System.Linq;
 
-namespace MODRP_JobBus.Functions
+namespace JobBus.Functions
 {
     internal class LineCreator
     {

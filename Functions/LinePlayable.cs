@@ -13,7 +13,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace MODRP_JobBus.Functions
+namespace JobBus.Functions
 {
     internal class LinePlayable
     {
