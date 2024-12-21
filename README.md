@@ -6,6 +6,8 @@ Plugin métier mettant en avant les chauffeurs de bus
 - Gestions des lignes de bus
 - Immersion dans le métier de chauffeur de bus
 - Affichage dynamique des lignes actuellements en circulation à proximité des arrêts de bus (ID : 1012 & 1172) avec le AAMenu > proximité
+- Girouette dynamique en fonction de la ligne, et de l'arrêt
+- SAE fonctionnel plongeant dans l'immersion (Choix de la ligne, GPS, ..)
 
 
 ## Installation et configuration
