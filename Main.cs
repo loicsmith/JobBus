@@ -315,11 +315,6 @@ namespace JobBus.Main
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 LineCreator.MainPanel(player);
             });
-            _menu.AddInteractionTabLine(PluginInformations, $"{TextFormattingHelper.Color("Zikso", TextFormattingHelper.Colors.Grey)}", (ui) =>
-            {
-                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-                LineCreator.MainPanel(player);
-            });
 
             _menu.AddProximityTabLine(PluginInformations, 1012, "Arrêt de bus - Informations voyageurs", (ui) =>
             {
