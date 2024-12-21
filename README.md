@@ -1,5 +1,5 @@
 # 🚎 JobBus
-Plugin métier mettant en avant les chauffeurs de bus
+Plugin métier mettant en avant les chauffeurs de bus - Nova-Life
 
 ## fonctionnalités
 - Gestions des arrêts de bus
