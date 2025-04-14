@@ -305,7 +305,7 @@ namespace JobBus.Functions
                         player.DestroyVehicleCheckpoint(c);
                         player.setup.TargetDisableNavigation();
                         player.Notify("SAE", "Les clients montent/descendent du bus..", NotificationManager.Type.Info, 5f);
-                        player.setup.NetworkisFreezed = true;
+                        player.IsFreezed = true;
 
                         await Task.Delay(5000);
 
@@ -316,7 +316,7 @@ namespace JobBus.Functions
                             await Task.Delay(500);
                         }
 
-                        player.setup.NetworkisFreezed = false;
+                        player.IsFreezed = false;
 
                         if (currentIndex < positions.Count - 1)
                         {
