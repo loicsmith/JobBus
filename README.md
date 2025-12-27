@@ -24,6 +24,13 @@ Plugin métier mettant en avant les chauffeurs de bus - Nova-Life
 4. Configurez via AAMenu :
    - **Administration > Plugins > JobBus** : Modifiez les paramètres nécessaires.
    - **LineCreator - JobBus** : Créez et configurez vos lignes et arrêts.
+     
+---
+
+## Utilisation
+1. Ouvrez AAMenu (touche P par défaut)
+2. Rendez vous dans la catégorie "Métier", et sélectionner la ligne "Utiliser SAE"
+3. Suivez les indications afin de démarrer votre service sur une nouvelle ligne
 
 ---
 
